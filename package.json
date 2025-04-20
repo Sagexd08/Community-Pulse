@@ -10,7 +10,7 @@
     "setup-db": "node scripts/setup-supabase.js",
     "create-buckets": "node scripts/create-buckets.js",
     "test-connection": "node scripts/test-connection.js",
-    "postinstall": "echo 'Skipping postinstall steps'"
+    "postinstall": "echo 'Installing dependencies' && npm install --legacy-peer-deps"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
