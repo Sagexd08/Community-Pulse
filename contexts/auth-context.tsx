@@ -1,6 +1,6 @@
 'use client'
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClientSupabaseClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from '@/hooks/use-toast'
@@ -27,15 +27,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClientSupabaseClient()
 
   useEffect(() => {
     const getUser = async () => {
       setIsLoading(true)
-      
+
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        
+
         if (session?.user) {
           // Get user profile data
           const { data: profile } = await supabase
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .select('*')
             .eq('id', session.user.id)
             .single()
-          
+
           setUser({
             id: session.user.id,
             email: session.user.email!,
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .select('*')
             .eq('id', session.user.id)
             .single()
-          
+
           setUser({
             id: session.user.id,
             email: session.user.email!,
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: 'Welcome back!',
         description: 'You have successfully signed in.',
       })
-      
+
       router.push('/dashboard')
       router.refresh()
     } catch (error: any) {
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: 'Account created!',
         description: 'Please check your email to confirm your account.',
       })
-      
+
       router.push('/signin')
     } catch (error: any) {
       toast({
@@ -161,12 +161,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut()
-      
+
       toast({
         title: 'Signed out',
         description: 'You have been successfully signed out.',
       })
-      
+
       router.push('/')
       router.refresh()
     } catch (error: any) {

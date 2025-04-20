@@ -22,6 +22,9 @@ const nextConfig = {
   reactStrictMode: false,
   poweredByHeader: false,
   compress: true,
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/ssr'],
+  },
 }
 
 export default nextConfig
