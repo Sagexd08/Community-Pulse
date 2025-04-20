@@ -50,7 +50,10 @@ export function Header() {
 
         {/* Desktop Auth/User Section */}
         <div className="hidden md:flex items-center gap-4 relative z-10">
-          <ThemeToggle />
+          <div className="relative mr-1">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/5 rounded-full blur-sm -z-10 opacity-75 dark:opacity-100"></div>
+            <ThemeToggle />
+          </div>
 
           {isLoading ? (
             <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
@@ -70,7 +73,10 @@ export function Header() {
 
         {/* Mobile Menu Button */}
         <div className="flex items-center gap-2 md:hidden relative z-10">
-          <ThemeToggle />
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/5 rounded-full blur-sm -z-10 opacity-75 dark:opacity-100"></div>
+            <ThemeToggle />
+          </div>
           <Button
             variant="ghost"
             size="icon"
