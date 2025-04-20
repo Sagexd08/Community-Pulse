@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { createAdminSupabaseClient } from '@/lib/supabase-server';
 import { LSTMImageClassifier } from '@/lib/ai/lstm-image-classifier';
 
 // Initialize the classifier
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     // Classify the image
     const classificationResult = await classifier.classifyImage(imageUrl);
-    
+
     if (!classificationResult) {
       return NextResponse.json(
         { error: 'Failed to classify image' },
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // If issueId is provided, store the classification result
     if (issueId) {
       const supabase = createAdminSupabaseClient();
-      
+
       // Check if there's an existing analysis for this issue
       const { data: existingAnalysis } = await supabase
         .from('ai_analysis')

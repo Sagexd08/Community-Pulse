@@ -1,4 +1,4 @@
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { createAdminSupabaseClient } from '@/lib/supabase-server';
 import { GoogleGenerativeAI, GenerativeModel, EmbeddingModel } from '@google/generative-ai';
 
 // Initialize the Gemini API client
@@ -29,12 +29,12 @@ export interface RetrievalResult {
 export class RAGKnowledgeBase {
   private embeddingModel: EmbeddingModel;
   private generativeModel: GenerativeModel;
-  
+
   constructor() {
     this.embeddingModel = genAI.getGenerativeModel({ model: 'embedding-001' });
     this.generativeModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
   }
-  
+
   /**
    * Add a new entry to the knowledge base
    * @param entry Knowledge base entry to add
@@ -44,10 +44,10 @@ export class RAGKnowledgeBase {
     try {
       // Generate embedding for the content
       const embedding = await this.generateEmbedding(entry.content);
-      
+
       // Create Supabase client
       const supabase = createAdminSupabaseClient();
-      
+
       // Insert the entry into the knowledge base
       const { data, error } = await supabase
         .from('knowledge_base')
@@ -63,19 +63,19 @@ export class RAGKnowledgeBase {
         })
         .select('id')
         .single();
-      
+
       if (error) {
         console.error('Error adding knowledge base entry:', error);
         throw error;
       }
-      
+
       return data.id;
     } catch (error) {
       console.error('Error in addEntry:', error);
       throw error;
     }
   }
-  
+
   /**
    * Retrieve relevant entries from the knowledge base
    * @param query Query to search for
@@ -94,39 +94,39 @@ export class RAGKnowledgeBase {
     try {
       // Generate embedding for the query
       const embedding = await this.generateEmbedding(query);
-      
+
       // Create Supabase client
       const supabase = createAdminSupabaseClient();
-      
+
       // Set default options
       const threshold = options.threshold || 0.7;
       const limit = options.limit || 5;
-      
+
       // Build the query
       let dbQuery = supabase.rpc('match_documents', {
         query_embedding: embedding,
         match_threshold: threshold,
         match_count: limit,
       });
-      
+
       // Add category filter if provided
       if (options.category) {
         dbQuery = dbQuery.eq('category', options.category);
       }
-      
+
       // Add tags filter if provided
       if (options.includeTags && options.includeTags.length > 0) {
         dbQuery = dbQuery.contains('tags', options.includeTags);
       }
-      
+
       // Execute the query
       const { data, error } = await dbQuery;
-      
+
       if (error) {
         console.error('Error retrieving knowledge base entries:', error);
         throw error;
       }
-      
+
       // Map the results to the expected format
       const entries = data.map((item: any) => ({
         id: item.id,
@@ -138,7 +138,7 @@ export class RAGKnowledgeBase {
         metadata: item.metadata,
         similarity: item.similarity,
       }));
-      
+
       return {
         entries,
         query,
@@ -153,7 +153,7 @@ export class RAGKnowledgeBase {
       };
     }
   }
-  
+
   /**
    * Generate embedding for text using Gemini API
    * @param text Text to generate embedding for
@@ -168,7 +168,7 @@ export class RAGKnowledgeBase {
       throw error;
     }
   }
-  
+
   /**
    * Analyze sentiment with RAG context
    * @param text Text to analyze
@@ -186,27 +186,27 @@ export class RAGKnowledgeBase {
         threshold: 0.6,
         limit: 3,
       });
-      
+
       // Extract context text
       const contextText = contextResult.entries
         .map((entry) => `${entry.title}: ${entry.content}`)
         .join('\n\n');
-      
+
       // If no context found, fall back to regular sentiment analysis
       if (contextResult.entries.length === 0) {
         const prompt = `
-          Analyze the sentiment of the following text and provide a score between -1 (very negative) 
+          Analyze the sentiment of the following text and provide a score between -1 (very negative)
           and 1 (very positive), where 0 is neutral. Also provide a brief analysis of the sentiment.
-          
+
           Text: "${text}"
-          
+
           Format your response as JSON with the following structure:
           {
             "score": [sentiment score],
             "analysis": "[brief analysis]"
           }
         `;
-        
+
         const result = await this.generativeModel.generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: {
@@ -216,9 +216,9 @@ export class RAGKnowledgeBase {
             maxOutputTokens: 1024,
           },
         });
-        
+
         const responseText = result.response.text();
-        
+
         // Extract JSON from the response
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -228,32 +228,32 @@ export class RAGKnowledgeBase {
             analysis: jsonResponse.analysis,
           };
         }
-        
+
         throw new Error('Failed to parse sentiment analysis response');
       }
-      
+
       // Use RAG for sentiment analysis
       const prompt = `
-        You are analyzing the sentiment of a community issue report. 
+        You are analyzing the sentiment of a community issue report.
         Use the following context information about similar issues to inform your analysis:
-        
+
         CONTEXT:
         ${contextText}
-        
-        Now, analyze the sentiment of the following text and provide a score between -1 (very negative) 
+
+        Now, analyze the sentiment of the following text and provide a score between -1 (very negative)
         and 1 (very positive), where 0 is neutral. Also provide a brief analysis of the sentiment,
         referencing the context where relevant.
-        
+
         TEXT TO ANALYZE:
         "${text}"
-        
+
         Format your response as JSON with the following structure:
         {
           "score": [sentiment score],
           "analysis": "[brief analysis with context references]"
         }
       `;
-      
+
       const result = await this.generativeModel.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
@@ -263,9 +263,9 @@ export class RAGKnowledgeBase {
           maxOutputTokens: 1024,
         },
       });
-      
+
       const responseText = result.response.text();
-      
+
       // Extract JSON from the response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -276,7 +276,7 @@ export class RAGKnowledgeBase {
           context: contextText,
         };
       }
-      
+
       throw new Error('Failed to parse sentiment analysis response');
     } catch (error) {
       console.error('Error in analyzeSentimentWithContext:', error);
@@ -286,7 +286,7 @@ export class RAGKnowledgeBase {
       };
     }
   }
-  
+
   /**
    * Generate suggestions with RAG context
    * @param issueDescription Issue description
@@ -309,39 +309,39 @@ export class RAGKnowledgeBase {
           limit: 3,
         }
       );
-      
+
       // Extract context text
       const contextText = contextResult.entries
         .map((entry) => `${entry.title}: ${entry.content}`)
         .join('\n\n');
-      
+
       // Build the prompt
       let prompt = `
         Generate helpful suggestions for addressing the following community issue:
-        
+
         Issue Description: "${issueDescription}"
         Category: ${category}
       `;
-      
+
       if (imageClassification) {
         prompt += `
           Image Classification: ${imageClassification.category} (confidence: ${imageClassification.confidence.toFixed(2)})
         `;
       }
-      
+
       if (contextResult.entries.length > 0) {
         prompt += `
           CONTEXT FROM SIMILAR ISSUES:
           ${contextText}
         `;
       }
-      
+
       prompt += `
         Based on the issue description, category, and context from similar issues,
         provide 3-5 actionable suggestions that could help resolve this issue.
         Format your response as a bulleted list of suggestions.
       `;
-      
+
       const result = await this.generativeModel.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
@@ -351,7 +351,7 @@ export class RAGKnowledgeBase {
           maxOutputTokens: 1024,
         },
       });
-      
+
       return result.response.text();
     } catch (error) {
       console.error('Error generating suggestions with context:', error);

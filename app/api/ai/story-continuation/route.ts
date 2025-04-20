@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { GeminiClient } from '@/lib/ai/gemini-client';
 
 // Initialize the Gemini client
@@ -19,14 +19,14 @@ export async function POST(request: NextRequest) {
 
     // Generate story continuation
     const continuation = await geminiClient.generateStoryContinuation(caption, currentText);
-    
+
     // If storyId is provided, update the story in the database
     if (storyId) {
       const supabase = createServerSupabaseClient();
-      
+
       // Get the current user
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session) {
         // Update the story content
         const { error } = await supabase

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { createAdminSupabaseClient } from '@/lib/supabase-server';
 import { GeminiClient } from '@/lib/ai/gemini-client';
 import { createRAGKnowledgeBase } from '@/lib/ai/rag-knowledge-base';
 

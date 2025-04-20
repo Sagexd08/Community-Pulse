@@ -8,7 +8,7 @@ import { MapPin, Book, PenTool, Clock } from "lucide-react"
 import StoryEditor from "@/components/story-editor"
 import { useToast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { createClientSupabaseClient } from "@/lib/supabase"
+import { createClient } from "@supabase/supabase-js"
 
 export default function StoriesPage() {
   const { toast } = useToast()
@@ -17,23 +17,26 @@ export default function StoriesPage() {
   const [currentStory, setCurrentStory] = useState<any>(null)
 
   // Initialize Supabase client
-  const supabase = createClientSupabaseClient()
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   // Fetch stories on component mount
   useEffect(() => {
     const fetchStories = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        
+
         if (session) {
           const { data, error } = await supabase
             .from('stories')
             .select('*')
             .eq('user_id', session.user.id)
             .order('updated_at', { ascending: false })
-          
+
           if (error) throw error
-          
+
           setStories(data || [])
         }
       } catch (error) {
@@ -55,7 +58,7 @@ export default function StoriesPage() {
   const handleSaveStory = async (storyId: string, caption: string, content: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session) {
         toast({
           title: 'Authentication required',
@@ -77,20 +80,20 @@ export default function StoriesPage() {
           })
           .eq('id', storyId)
           .eq('user_id', session.user.id)
-        
+
         if (error) throw error
-        
+
         // Update local state
-        setStories(prev => 
-          prev.map(story => 
-            story.id === storyId 
-              ? { 
-                  ...story, 
-                  title: caption.substring(0, 50), 
-                  content, 
-                  caption, 
-                  updated_at: new Date().toISOString() 
-                } 
+        setStories(prev =>
+          prev.map(story =>
+            story.id === storyId
+              ? {
+                  ...story,
+                  title: caption.substring(0, 50),
+                  content,
+                  caption,
+                  updated_at: new Date().toISOString()
+                }
               : story
           )
         )
@@ -107,9 +110,9 @@ export default function StoriesPage() {
             updated_at: new Date().toISOString(),
           })
           .select()
-        
+
         if (error) throw error
-        
+
         // Update local state
         if (data && data.length > 0) {
           setStories(prev => [data[0], ...prev])
@@ -184,8 +187,8 @@ export default function StoriesPage() {
                 <h1 className="text-3xl font-bold text-zinc-900">My Stories</h1>
                 <p className="text-zinc-600 mt-1">Create and edit stories with AI-powered suggestions</p>
               </div>
-              <Button 
-                onClick={() => setCurrentStory(null)} 
+              <Button
+                onClick={() => setCurrentStory(null)}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 <PenTool className="mr-2 h-4 w-4" />
@@ -195,7 +198,7 @@ export default function StoriesPage() {
 
             {/* Story Editor */}
             <div className="mb-12">
-              <StoryEditor 
+              <StoryEditor
                 storyId={currentStory?.id}
                 initialCaption={currentStory?.caption || ""}
                 initialContent={currentStory?.content || ""}
@@ -209,7 +212,7 @@ export default function StoriesPage() {
                 <Book className="mr-2 h-5 w-5 text-emerald-500" />
                 Your Stories
               </h2>
-              
+
               {isLoading ? (
                 <div className="text-center py-12">
                   <div className="inline-block p-3 bg-emerald-100 rounded-full mb-4">
@@ -232,8 +235,8 @@ export default function StoriesPage() {
               ) : (
                 <div className="grid grid-cols-1 gap-4">
                   {stories.map((story) => (
-                    <Card 
-                      key={story.id} 
+                    <Card
+                      key={story.id}
                       className={`hover:shadow-md transition-shadow cursor-pointer ${
                         currentStory?.id === story.id ? 'border-emerald-300 bg-emerald-50' : ''
                       }`}

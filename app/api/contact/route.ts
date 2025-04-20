@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { createAdminSupabaseClient } from '@/lib/supabase-server';
 import axios from 'axios';
 import { contactFormSchema } from '@/lib/validation-schemas';
 import {

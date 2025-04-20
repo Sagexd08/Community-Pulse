@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { createAdminSupabaseClient } from '@/lib/supabase-server';
 import { createSpeechRecognitionService } from '@/lib/ai/speech-recognition';
 
 export async function POST(request: NextRequest) {
@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
 
     // Initialize the speech recognition service
     const speechService = createSpeechRecognitionService();
-    
+
     // Transcribe the audio
     const transcriptionResult = await speechService.transcribeAudio(audioUrl, language || 'en-US');
-    
+
     if (transcriptionResult.error) {
       console.error('Transcription error:', transcriptionResult.error);
       return NextResponse.json(
@@ -27,18 +27,18 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    
+
     // If issueId is provided, store the transcription in Supabase
     if (issueId) {
       const supabase = createAdminSupabaseClient();
-      
+
       // Check if there's an existing transcription for this issue
       const { data: existingTranscription } = await supabase
         .from('transcriptions')
         .select('id')
         .eq('issue_id', issueId)
         .maybeSingle();
-      
+
       if (existingTranscription) {
         // Update existing transcription
         await supabase
@@ -64,12 +64,12 @@ export async function POST(request: NextRequest) {
             created_at: new Date().toISOString(),
           });
       }
-      
+
       // Also update the issue with the transcription text
       await supabase
         .from('issues')
         .update({
-          description: supabase.rpc('append_text', { 
+          description: supabase.rpc('append_text', {
             original_text: supabase.rpc('get_issue_description', { issue_id: issueId }),
             new_text: `\n\nAudio Transcription: ${transcriptionResult.text}`
           }),

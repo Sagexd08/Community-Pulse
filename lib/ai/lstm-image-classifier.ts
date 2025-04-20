@@ -1,5 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { createAdminSupabaseClient } from '@/lib/supabase-server';
 
 // Define the categories for classification
 const CATEGORIES = [
