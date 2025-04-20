@@ -30,12 +30,16 @@ Community Pulse is a platform that uses AI and geospatial technology to help und
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SUPABASE_JWT_SECRET=your-supabase-jwt-secret
 
 # n8n Configuration
 N8N_WEBHOOK_URL=your-n8n-webhook-url
 
 # Google Gemini API
 GOOGLE_GEMINI_API_KEY=your-gemini-api-key
+
+# OpenAI API
+OPENAI_API_KEY=your-openai-api-key
 
 # App Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -75,7 +79,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ```bash
 # Install dependencies
-npm install
+npm install --legacy-peer-deps
 
 # Run the development server
 npm run dev
@@ -144,14 +148,23 @@ Google's Gemini AI is used for:
 
 ### Project Structure
 
+See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for a detailed breakdown of the project organization.
+
+#### Frontend (Next.js)
 - `/app`: Next.js app router pages
 - `/components`: React components
+- `/contexts`: React context providers
+- `/hooks`: Custom React hooks
+
+#### Backend (API Routes and Services)
+- `/app/api`: Next.js API routes
 - `/lib`: Utility functions and services
 - `/lib/ai`: AI model implementations
   - `/lib/ai/lstm-image-classifier.ts`: LSTM model for image classification
   - `/lib/ai/gemini-client.ts`: Gemini API client
   - `/lib/ai/rag-knowledge-base.ts`: RAG implementation for sentiment analysis
   - `/lib/ai/speech-recognition.ts`: Speech recognition service
+  - `/lib/ai/issue-classifier.ts`: OpenAI-powered issue classification
 - `/lib/supabase.ts`: Supabase client configuration
 - `/n8n-workflows`: n8n workflow configurations
 - `/scripts`: Setup and utility scripts
@@ -164,6 +177,15 @@ To add new features:
 2. Add new API routes in the `/app/api` directory
 3. Update the database schema in `/lib/database.types.ts`
 4. Add new AI models in the `/lib/ai` directory
+
+## Deployment
+
+The project is configured for deployment on Vercel:
+
+1. Push your changes to GitHub
+2. Connect your GitHub repository to Vercel
+3. Configure the environment variables in Vercel
+4. Deploy
 
 ## License
 
