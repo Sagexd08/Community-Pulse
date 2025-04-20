@@ -1,0 +1,433 @@
+{
+  "name": "Issue Processing Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-issue",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract data from webhook payload\nconst { issueId, title, description, category, location, imageUrl, audioUrl, userId } = $input.item.json;\n\n// Format the data for processing\nreturn {\n  json: {\n    issueId,\n    title,\n    description,\n    category,\n    location,\n    imageUrl,\n    audioUrl,\n    userId,\n    timestamp: new Date().toISOString(),\n    source: 'issue_webhook',\n    environment: process.env.NODE_ENV || 'development'\n  }\n};"
+      },
+      "name": "Format Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"imageUrl\"]}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Has Image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"appUrl\"]}}/api/ai/classify-image",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "imageUrl",
+              "value": "={{$json[\"imageUrl\"]}}"
+            },
+            {
+              "name": "issueId",
+              "value": "={{$json[\"issueId\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Classify Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        850,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"audioUrl\"]}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Has Audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        850,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"appUrl\"]}}/api/ai/transcribe-audio",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "audioUrl",
+              "value": "={{$json[\"audioUrl\"]}}"
+            },
+            {
+              "name": "issueId",
+              "value": "={{$json[\"issueId\"]}}"
+            },
+            {
+              "name": "language",
+              "value": "en-US"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Transcribe Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1050,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"appUrl\"]}}/api/ai/analyze-sentiment",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{$json[\"description\"]}}"
+            },
+            {
+              "name": "issueId",
+              "value": "={{$json[\"issueId\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Analyze Sentiment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1050,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"appUrl\"]}}/api/ai/classify-issue",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{$json[\"title\"]}}"
+            },
+            {
+              "name": "description",
+              "value": "={{$json[\"description\"]}}"
+            },
+            {
+              "name": "location",
+              "value": "={{$json[\"location\"]}}"
+            },
+            {
+              "name": "issueId",
+              "value": "={{$json[\"issueId\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Classify Issue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"appUrl\"]}}/api/notifications/send",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{$json[\"userId\"]}}"
+            },
+            {
+              "name": "type",
+              "value": "issue_processed"
+            },
+            {
+              "name": "title",
+              "value": "Issue Processed"
+            },
+            {
+              "name": "message",
+              "value": "Your issue has been processed and analyzed by our AI system."
+            },
+            {
+              "name": "data",
+              "value": "={ \"issueId\": $json[\"issueId\"], \"title\": $json[\"title\"] }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Send Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"message\": \"Issue processed successfully\", \"issueId\": $json[\"issueId\"] }",
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Add app URL for API calls\n$input.item.json.appUrl = process.env.APP_URL || 'http://localhost:3000';\n\nreturn $input;"
+      },
+      "name": "Set Environment",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        450,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Format Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Data": {
+      "main": [
+        [
+          {
+            "node": "Set Environment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Image?": {
+      "main": [
+        [
+          {
+            "node": "Classify Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Audio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Audio?": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyze Sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze Sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio": {
+      "main": [
+        [
+          {
+            "node": "Classify Issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Sentiment": {
+      "main": [
+        [
+          {
+            "node": "Classify Issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Issue": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Notification": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Environment": {
+      "main": [
+        [
+          {
+            "node": "Has Image?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1",
+  "id": "2",
+  "meta": {
+    "instanceId": "1"
+  },
+  "tags": []
+}

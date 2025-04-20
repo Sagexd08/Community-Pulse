@@ -1,0 +1,274 @@
+{
+  "name": "Contact Form Callback",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "contact-callback",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"phoneNumber\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract data from webhook payload\nconst { contactId, firstName, lastName, phoneNumber, email, subject, message } = $input.item.json;\n\n// Format the message for the notification\nconst formattedMessage = `\nNew Contact Form Callback Request\n\nContact ID: ${contactId}\nName: ${firstName} ${lastName}\nPhone: ${phoneNumber}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}\n`;\n\nreturn {\n  json: {\n    contactId,\n    firstName,\n    lastName,\n    phoneNumber,\n    email,\n    subject,\n    message,\n    formattedMessage\n  }\n};"
+      },
+      "name": "Format Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.twilio.com/2010-04-01/Accounts/{{$node[\"Twilio API Key\"].json[\"accountSid\"]}}/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "To",
+              "value": "={{$node[\"Format Data\"].json[\"phoneNumber\"]}}"
+            },
+            {
+              "name": "From",
+              "value": "={{$node[\"Twilio API Key\"].json[\"fromNumber\"]}}"
+            },
+            {
+              "name": "Body",
+              "value": "=Thank you for contacting Community Pulse! We've received your message and will call you back shortly. - The Community Pulse Team"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Send SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        850,
+        200
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "1",
+          "name": "Twilio API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "notifications@communitypulse.org",
+        "fromName": "Community Pulse",
+        "toEmail": "support@communitypulse.org",
+        "subject": "=New Callback Request: {{$node[\"Format Data\"].json[\"subject\"]}}",
+        "text": "={{$node[\"Format Data\"].json[\"formattedMessage\"]}}",
+        "options": {}
+      },
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        850,
+        400
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "SMTP Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.supabase.co/rest/v1/contact_messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$node[\"Supabase API Key\"].json[\"apiKey\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "callback_scheduled"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Update Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1050,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "3",
+          "name": "Supabase API Key"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "name": "Twilio API Key",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        650,
+        500
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Supabase API Key",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        850,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"message\": \"Callback request processed successfully\" }",
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "Format Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Data": {
+      "main": [
+        [
+          {
+            "node": "Send SMS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS": {
+      "main": [
+        [
+          {
+            "node": "Update Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Update Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Supabase": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1",
+  "id": "1",
+  "meta": {
+    "instanceId": "1"
+  },
+  "tags": []
+}
