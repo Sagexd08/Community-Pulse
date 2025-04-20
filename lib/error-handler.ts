@@ -80,11 +80,11 @@ export async function withRetry<T>(
     shouldRetry?: (error: any) => boolean;
   } = {}
 ): Promise<T> {
-  const { 
-    retries = 3, 
-    delay = 300, 
+  const {
+    retries = 3,
+    delay = 300,
     backoff = 2,
-    shouldRetry = () => true 
+    shouldRetry = () => true
   } = options;
 
   let lastError: any;
@@ -94,11 +94,11 @@ export async function withRetry<T>(
       return await fn();
     } catch (error) {
       lastError = error;
-      
+
       if (attempt >= retries || !shouldRetry(error)) {
         throw error;
       }
-      
+
       // Wait with exponential backoff
       await new Promise(resolve => setTimeout(resolve, delay * Math.pow(backoff, attempt)));
     }
@@ -109,9 +109,15 @@ export async function withRetry<T>(
 
 // API response handler
 export const handleApiError = (error: any) => {
+  // Log the error and return appropriate response
+  return errorHandler(error);
+};
+
+// Error handler function (alias for backward compatibility)
+export const errorHandler = (error: any) => {
   // Convert to AppError if it's not already
-  const appError = error instanceof AppError 
-    ? error 
+  const appError = error instanceof AppError
+    ? error
     : new AppError(
         error.message || 'An unexpected error occurred',
         ErrorType.INTERNAL,
@@ -125,7 +131,7 @@ export const handleApiError = (error: any) => {
 
   // Return appropriate response
   const status = ErrorStatusMap[appError.type];
-  
+
   return NextResponse.json(
     {
       error: {
@@ -145,7 +151,7 @@ export const validateRequest = <T>(
   schema: { validate: (data: any) => { error?: any; value: T } }
 ): T => {
   const { error, value } = schema.validate(data);
-  
+
   if (error) {
     throw new AppError(
       'Validation error',
@@ -154,7 +160,7 @@ export const validateRequest = <T>(
       error.details
     );
   }
-  
+
   return value;
 };
 

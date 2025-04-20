@@ -1,6 +1,5 @@
 import { OpenAI } from 'openai';
-import { Database } from '@/lib/supabase';
-import { errorHandler } from '@/lib/error-handler';
+import { AppError, ErrorType } from '@/lib/error-handler';
 
 // Define issue categories and their descriptions
 export const ISSUE_CATEGORIES = {
@@ -28,7 +27,7 @@ export interface ClassificationResult {
 
 export class IssueClassifier {
   private openai: OpenAI;
-  
+
   constructor(apiKey: string) {
     this.openai = new OpenAI({ apiKey });
   }
@@ -37,13 +36,13 @@ export class IssueClassifier {
    * Classifies an issue based on its title and description
    */
   async classifyIssue(
-    title: string, 
+    title: string,
     description: string,
     location?: string
   ): Promise<ClassificationResult> {
     try {
       const prompt = this.buildClassificationPrompt(title, description, location);
-      
+
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [
@@ -64,7 +63,13 @@ export class IssueClassifier {
       const result = JSON.parse(response.choices[0].message.content || '{}');
       return this.validateClassificationResult(result);
     } catch (error) {
-      return errorHandler(error, 'Error classifying issue');
+      console.error('Error classifying issue:', error);
+      throw new AppError(
+        'Failed to classify issue',
+        ErrorType.EXTERNAL_SERVICE,
+        'CLASSIFICATION_ERROR',
+        { error: error instanceof Error ? error.message : String(error) }
+      );
     }
   }
 
@@ -75,7 +80,7 @@ export class IssueClassifier {
     const categories = Object.entries(ISSUE_CATEGORIES)
       .map(([key, desc]) => `${key}: ${desc}`)
       .join('\n');
-    
+
     return `
 Please classify the following community issue into one of these categories:
 ${categories}
@@ -106,15 +111,15 @@ Analyze the text and return a JSON object with the following structure:
     }
 
     // Ensure confidence is a number between 0 and 1
-    result.confidence = typeof result.confidence === 'number' 
+    result.confidence = typeof result.confidence === 'number'
       ? Math.max(0, Math.min(1, result.confidence))
       : 0.5;
 
     // Ensure other fields have default values if missing
     result.reasoning = result.reasoning || 'No reasoning provided';
     result.keywords = Array.isArray(result.keywords) ? result.keywords : [];
-    result.severity = ['low', 'medium', 'high'].includes(result.severity) 
-      ? result.severity 
+    result.severity = ['low', 'medium', 'high'].includes(result.severity)
+      ? result.severity
       : 'medium';
     result.estimatedImpact = ['individual', 'neighborhood', 'community-wide'].includes(result.estimatedImpact)
       ? result.estimatedImpact
@@ -128,25 +133,25 @@ Analyze the text and return a JSON object with the following structure:
    */
   async batchClassify(issues: Array<{id: string, title: string, description: string, location?: string}>): Promise<Record<string, ClassificationResult>> {
     const results: Record<string, ClassificationResult> = {};
-    
+
     // Process in batches of 5 to avoid rate limits
     const batchSize = 5;
     for (let i = 0; i < issues.length; i += batchSize) {
       const batch = issues.slice(i, i + batchSize);
-      
+
       await Promise.all(
         batch.map(async (issue) => {
           const result = await this.classifyIssue(issue.title, issue.description, issue.location);
           results[issue.id] = result;
         })
       );
-      
+
       // Simple rate limiting
       if (i + batchSize < issues.length) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-    
+
     return results;
   }
 }
