@@ -9,16 +9,13 @@ const nextConfig = {
   images: {
     domains: ['fkuzdgnidoiksdrulcav.supabase.co'],
     formats: ['image/avif', 'image/webp'],
-    unoptimized: true,
   },
   swcMinify: true,
   reactStrictMode: false,
   poweredByHeader: false,
   compress: true,
   // For Vercel deployment
-  output: 'export',
-  distDir: 'out',
-  trailingSlash: true,
+  output: 'standalone',
 }
 
 export default nextConfig
