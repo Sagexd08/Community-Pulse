@@ -10,8 +10,7 @@
     "setup-db": "node scripts/setup-supabase.js",
     "create-buckets": "node scripts/create-buckets.js",
     "test-connection": "node scripts/test-connection.js",
-    "postinstall": "npm run fix-deps",
-    "fix-deps": "npm install --legacy-peer-deps"
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

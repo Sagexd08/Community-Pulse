@@ -3,10 +3,17 @@
   "version": 2,
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "installCommand": "npm install --force",
+  "installCommand": "npm install --legacy-peer-deps",
   "regions": ["iad1"],
   "github": {
     "silent": true,
     "autoAlias": true
+  },
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://fkuzdgnidoiksdrulcav.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrdXpkZ25pZG9pa3NkcnVsY2F2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Mzk0NDM2MSwiZXhwIjoyMDU5NTIwMzYxfQ.3aV4aqF8wOiKWr05MkwpqbDTCutMPSx2CxVtB0A6dOY",
+    "GOOGLE_GEMINI_API_KEY": "AIzaSyBUS_G7RP-5QBHxGW3RFFSt3Snbs983okQ",
+    "OPENAI_API_KEY": "sk-5678mnop5678mnop5678mnop5678mnop5678mnop",
+    "NEXT_PUBLIC_APP_URL": "https://community-pulse-project.vercel.app"
   }
 }
