@@ -9,8 +9,7 @@
     "lint": "next lint",
     "setup-db": "node scripts/setup-supabase.js",
     "create-buckets": "node scripts/create-buckets.js",
-    "test-connection": "node scripts/test-connection.js",
-    "vercel-build": "npm run build"
+    "test-connection": "node scripts/test-connection.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
